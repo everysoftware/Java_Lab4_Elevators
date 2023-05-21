@@ -1,33 +1,57 @@
-import java.util.NoSuchElementException;
-import java.util.Scanner;
+import java.time.Instant;
+import java.util.*;
+import java.util.concurrent.Executors;
 
 public class Main {
     public static void main(String[] args) {
-        System.out.println("Thread: main");
-
         var scanner = new Scanner(System.in);
-        int count = 0;
-        int interval = 0;
+        int maxFloor;
+        int capacity;
+        int passengerInterval;
+        int velocity;
         try {
-            System.out.print("Request count: ");
-            count = scanner.nextInt();
-            System.out.print("Request interval: ");
-            interval = scanner.nextInt();
+            System.out.println("Минимальный этаж: 0.");
+            System.out.print("Максимальный этаж: ");
+            maxFloor = scanner.nextInt();
+            System.out.print("Вместимость лифтов: ");
+            capacity = scanner.nextInt();
+            System.out.print("Интервал появления пассажиров (мс): ");
+            passengerInterval = scanner.nextInt();
+            System.out.print("Скорость движения лифта (мс на пролёт 1 этажа): ");
+            velocity = scanner.nextInt();
         } catch (NoSuchElementException | IllegalStateException e) {
             e.printStackTrace();
+            return;
         }
 
-        var managerThread = new Thread(new RequestManager());
-        var generationThread = new Thread(new RequestGenerator(count, interval));
+        var building = new Building(maxFloor, capacity);
+        var passengerIds = new HashSet<Integer>();
+        var random = new Random(Instant.now().getEpochSecond());
+        var timer = new Timer();
+        var executor = Executors.newCachedThreadPool();
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                executor.execute(building::runElevators);
+            }
+        }, 0, velocity);
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                var from = random.nextInt(0, maxFloor + 1);
+                var to = random.nextInt(0, maxFloor + 1);
+                while (from == to) {
+                    to = random.nextInt(0, maxFloor + 1);
+                }
+                var personId = random.nextInt(Integer.MAX_VALUE);
+                while (passengerIds.contains(personId)) {
+                    personId = random.nextInt(Integer.MAX_VALUE);
+                }
+                passengerIds.add(personId);
+                var request = new Request(personId, from, to);
+                executor.execute(() -> building.callElevator(request));
 
-        try {
-            managerThread.start();
-            generationThread.start();
-
-            managerThread.join();
-            generationThread.join();
-        } catch (IllegalStateException | InterruptedException e) {
-            e.printStackTrace();
-        }
+            }
+        }, 0, passengerInterval);
     }
 }

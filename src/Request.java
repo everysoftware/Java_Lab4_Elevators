@@ -1,20 +1,13 @@
-import java.text.MessageFormat;
-
 public class Request {
-    public final int callingFloor;
-    public final int targetFloor;
-    public final Direction direction;
-
-    public Request(int currentFloor, int targetFloor) {
+    public int id;
+    public int callingFloor;
+    public int targetFloor;
+    public ElevatorStatus direction;
+    public Request(int id, int currentFloor, int targetFloor) {
+        this.id = id;
         this.callingFloor = currentFloor;
         this.targetFloor = targetFloor;
-        direction = targetFloor > currentFloor ?
-                Direction.UP : Direction.DOWN;
-    }
-
-    @Override
-    public String toString() {
-        return MessageFormat.format("Request {0} to {1} (direction={2})",
-                callingFloor, targetFloor, direction);
+        this.direction = targetFloor > currentFloor ?
+                ElevatorStatus.MOVING_UP : ElevatorStatus.MOVING_DOWN;
     }
 }
